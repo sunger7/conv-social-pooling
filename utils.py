@@ -11,7 +11,7 @@ class ngsimDataset(Dataset):
 
 
     def __init__(self, mat_file, t_h=30, t_f=50, d_s=2, enc_size = 64, grid_size = (13,3)):
-        self.D = scp.loadmat(mat_file)['traj']
+        self.D = scp.loadmat(mat_file)['traj'] #整个数据集
         self.T = scp.loadmat(mat_file)['tracks']
         self.t_h = t_h  # length of track history
         self.t_f = t_f  # length of predicted trajectory
@@ -28,19 +28,19 @@ class ngsimDataset(Dataset):
 
     def __getitem__(self, idx):
 
-        dsId = self.D[idx, 0].astype(int)
+        dsId = self.D[idx, 0].astype(int) #第idx行的数据
         vehId = self.D[idx, 1].astype(int)
-        t = self.D[idx, 2]
-        grid = self.D[idx,8:]
+        t = self.D[idx, 2] #当前的时间
+        grid = self.D[idx,8:] #周围的车的id
         neighbors = []
 
         # Get track history 'hist' = ndarray, and future track 'fut' = ndarray
-        hist = self.getHistory(vehId,t,vehId,dsId)
+        hist = self.getHistory(vehId,t,vehId,dsId) # 
         fut = self.getFuture(vehId,t,dsId)
 
         # Get track histories of all neighbours 'neighbors' = [ndarray,[],ndarray,ndarray]
         for i in grid:
-            neighbors.append(self.getHistory(i.astype(int), t,vehId,dsId))
+            neighbors.append(self.getHistory(i.astype(int), t,vehId,dsId)) #获取 当前时间的邻居
 
         # Maneuvers 'lon_enc' = one-hot vector, 'lat_enc = one-hot vector
         lon_enc = np.zeros([2])
@@ -59,9 +59,9 @@ class ngsimDataset(Dataset):
         else:
             if self.T.shape[1]<=vehId-1:
                 return np.empty([0,2])
-            refTrack = self.T[dsId-1][refVehId-1].transpose()
-            vehTrack = self.T[dsId-1][vehId-1].transpose()
-            refPos = refTrack[np.where(refTrack[:,0]==t)][0,1:3]
+            refTrack = self.T[dsId-1][refVehId-1].transpose() # refVehId 的所有时刻的轨迹
+            vehTrack = self.T[dsId-1][vehId-1].transpose() # VehId 的所有时刻的轨迹
+            refPos = refTrack[np.where(refTrack[:,0]==t)][0,1:3] # refVehId当前时间的坐标
 
             if vehTrack.size==0 or np.argwhere(vehTrack[:, 0] == t).size==0:
                  return np.empty([0,2])
